@@ -3,9 +3,45 @@
   "name": "YouTube Tab Lock",
   "version": "1.0.0",
   "description": "Keep watching the YouTube videos you already opened, without opening new ones.",
-  "permissions": ["tabs", "storage", "declarativeNetRequest", "webNavigation"],
-  "host_permissions": ["*://*.youtube.com/*", "*://youtu.be/*"],
-  "background": { "service_worker": "background.js" },
-  "action": { "default_title": "YouTube Tab Lock", "default_popup": "popup.html" },
-  "web_accessible_resources": [{ "resources": ["blocked.html", "styles.css"], "matches": ["*://*.youtube.com/*", "*://youtu.be/*"] }]
+  "permissions": [
+    "tabs",
+    "storage",
+    "declarativeNetRequest",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://youtu.be/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "YouTube Tab Lock",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "32": "assets/icon-32.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon-128.png"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "blocked.html",
+        "styles.css"
+      ],
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://youtu.be/*"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  }
 }
