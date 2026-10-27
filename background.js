@@ -34,6 +34,20 @@ async function setBadge(locked) {
   if (locked) await chrome.action.setBadgeBackgroundColor({ color: '#c62828' });
 }
 
+// Existing tabs do not receive a newly installed content script until navigation.
+async function updateYouTubePages(locked) {
+  const tabs = await chrome.tabs.query({ url: ['*://*.youtube.com/*'] });
+  await Promise.allSettled(tabs.map(async tab => {
+    if (tab.id == null) return;
+    if (locked) {
+      try { await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }); }
+      catch { /* Restricted or closed tabs cannot be injected. */ }
+    }
+    try { await chrome.tabs.sendMessage(tab.id, { type: 'lock-state', locked }); }
+    catch { /* The tab may have closed or not have a content script. */ }
+  }));
+}
+
 async function lock() {
   const tabs = await chrome.tabs.query({});
   const allowed = {};
@@ -60,6 +74,7 @@ async function lock() {
     throw error;
   }
   await setBadge(true);
+  await updateYouTubePages(true);
   return Object.keys(allowed).length;
 }
 
@@ -68,6 +83,7 @@ async function unlock() {
   await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: old.map(rule => rule.id) });
   await chrome.storage.session.set({ locked: false, allowed: {} });
   await setBadge(false);
+  await updateYouTubePages(false);
 }
 
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
