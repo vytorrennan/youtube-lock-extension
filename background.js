@@ -1,6 +1,8 @@
-const BLOCK_RULE = 1;
 const FIRST_ALLOW_RULE = 100;
-const VIDEO_FILTER = '^https?://([a-zA-Z0-9-]+\\.)*youtube\\.com/(watch\\?[^#]*|shorts/[^/?#]+|live/[^/?#]+|embed/[^/?#]+)|^https?://youtu\\.be/[^/?#]+';
+const BLOCK_FILTERS = [
+  '||youtube.com/watch?', '||youtube.com/shorts/',
+  '||youtube.com/live/', '||youtube.com/embed/', '||youtu.be/'
+];
 
 function videoId(address) {
   try {
@@ -14,11 +16,17 @@ function videoId(address) {
   } catch { return null; }
 }
 
-// Escape video IDs before putting them in a declarativeNetRequest regular expression.
-function escapeRegex(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-function allowFilter(id) {
-  const v = escapeRegex(id);
-  return `^https?://([a-zA-Z0-9-]+\\.)*youtube\\.com/(watch\\?([^#]*&)?v=${v}(&|#|$)|(?:shorts|live|embed)/${v}([/?#]|$))|^https?://youtu\\.be/${v}([/?#]|$)`;
+// URL filters avoid Chrome's compiled regular-expression size limit.
+function allowFilters(id) {
+  const v = encodeURIComponent(id);
+  return [
+    `||youtube.com/watch?v=${v}^`,
+    `||youtube.com/watch?*&v=${v}^`,
+    `||youtube.com/shorts/${v}^`,
+    `||youtube.com/live/${v}^`,
+    `||youtube.com/embed/${v}^`,
+    `||youtu.be/${v}^`
+  ];
 }
 
 async function setBadge(locked) {
@@ -29,12 +37,18 @@ async function setBadge(locked) {
 async function lock() {
   const tabs = await chrome.tabs.query({});
   const allowed = {};
-  const rules = [{ id: BLOCK_RULE, priority: 1, action: { type: 'redirect', redirect: { extensionPath: '/blocked.html' } }, condition: { regexFilter: VIDEO_FILTER, resourceTypes: ['main_frame'] } }];
+  const rules = BLOCK_FILTERS.map((urlFilter, index) => ({
+    id: index + 1, priority: 1,
+    action: { type: 'redirect', redirect: { extensionPath: '/blocked.html' } },
+    condition: { urlFilter, resourceTypes: ['main_frame'] }
+  }));
   for (const tab of tabs) {
-    const id = videoId(tab.url || tab.pendingUrl || '');
+    const id = videoId(tab.pendingUrl || tab.url || '');
     if (id && tab.id != null) {
       allowed[tab.id] = id;
-      rules.push({ id: FIRST_ALLOW_RULE + rules.length, priority: 2, action: { type: 'allow' }, condition: { regexFilter: allowFilter(id), tabIds: [tab.id], resourceTypes: ['main_frame'] } });
+      for (const urlFilter of allowFilters(id)) {
+        rules.push({ id: FIRST_ALLOW_RULE + rules.length, priority: 2, action: { type: 'allow' }, condition: { urlFilter, tabIds: [tab.id], resourceTypes: ['main_frame'] } });
+      }
     }
   }
   const old = await chrome.declarativeNetRequest.getSessionRules();
