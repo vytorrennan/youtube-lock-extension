@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Tab Lock",
+  "version": "1.0.0",
+  "description": "Keep watching the YouTube videos you already opened, without opening new ones.",
+  "permissions": ["tabs", "storage", "declarativeNetRequest", "webNavigation"],
+  "host_permissions": ["*://*.youtube.com/*", "*://youtu.be/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "YouTube Tab Lock", "default_popup": "popup.html" },
+  "web_accessible_resources": [{ "resources": ["blocked.html", "styles.css"], "matches": ["*://*.youtube.com/*", "*://youtu.be/*"] }]
+}
